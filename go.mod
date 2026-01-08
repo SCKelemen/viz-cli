@@ -10,8 +10,6 @@ replace github.com/SCKelemen/wpt-test-gen => ../wpt-test-gen
 
 replace github.com/SCKelemen/layout => ../layout
 
-replace github.com/SCKelemen/render-svg => ../render-svg
-
 replace github.com/SCKelemen/color => ../color
 
 replace github.com/SCKelemen/text => ../text
@@ -28,8 +26,10 @@ require (
 require (
 	github.com/SCKelemen/color v1.0.0 // indirect
 	github.com/SCKelemen/layout v1.1.0 // indirect
-	github.com/SCKelemen/render-svg v0.0.0-20260108140101-f0c550c69472 // indirect
+	github.com/SCKelemen/svg v0.0.0-00010101000000-000000000000 // indirect
 	github.com/SCKelemen/text v0.0.0-00010101000000-000000000000 // indirect
 	github.com/SCKelemen/unicode v1.0.1-0.20251225190048-233be2b0d647 // indirect
 	github.com/SCKelemen/units v1.0.2 // indirect
 )
+
+replace github.com/SCKelemen/svg => ../svg
