@@ -152,25 +152,29 @@ func (m simpleModel) View() string {
 
 	// Heatmap
 	output += "┌─ CONTRIBUTION HEATMAP ───────────────────────────────────────────┐\n"
-	heatmapBounds := dataviz.Bounds{X: 0, Y: 0, Width: m.width - 4, Height: 3}
+	heatmapBounds := dataviz.Bounds{X: 0, Y: 0, Width: 60, Height: 3}
 	heatmapOutput := renderer.RenderHeatmap(m.heatmap, heatmapBounds, config)
 	output += heatmapOutput.String()
 	output += "└──────────────────────────────────────────────────────────────────┘\n\n"
 
 	// Line Graph
 	output += "┌─ METRICS LINE GRAPH ─────────────────────────────────────────────┐\n"
-	lineHeight := (m.height - 20) / 2
-	if lineHeight < 10 {
-		lineHeight = 10
+	lineHeight := 15
+	if m.height > 40 {
+		lineHeight = 20
 	}
-	lineBounds := dataviz.Bounds{X: 0, Y: 0, Width: m.width - 4, Height: lineHeight}
+	lineWidth := 70
+	if m.width > 100 {
+		lineWidth = 80
+	}
+	lineBounds := dataviz.Bounds{X: 0, Y: 0, Width: lineWidth, Height: lineHeight}
 	lineOutput := renderer.RenderLineGraph(m.lineGraph, lineBounds, config)
 	output += lineOutput.String()
 	output += "\n└──────────────────────────────────────────────────────────────────┘\n\n"
 
 	// Bar Chart
 	output += "┌─ LANGUAGE USAGE BAR CHART ───────────────────────────────────────┐\n"
-	barBounds := dataviz.Bounds{X: 0, Y: 0, Width: m.width - 4, Height: 8}
+	barBounds := dataviz.Bounds{X: 0, Y: 0, Width: 50, Height: 8}
 	barOutput := renderer.RenderBarChart(m.barChart, barBounds, config)
 	output += barOutput.String()
 	output += "└──────────────────────────────────────────────────────────────────┘\n"
