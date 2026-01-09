@@ -116,13 +116,21 @@ func (m simpleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// wrapInBorders adds left and right borders to content
-func wrapInBorders(content string, boxWidth int) string {
+// wrapInBorders adds left and right borders to content with optional color
+func wrapInBorders(content string, boxWidth int, borderColor string) string {
 	lines := strings.Split(content, "\n")
 	var result strings.Builder
 
 	// Content width is box width minus borders (│ on each side) and padding (1 space on each side)
 	contentWidth := boxWidth - 4
+
+	// ANSI color codes for borders
+	colorCode := ""
+	resetCode := ""
+	if borderColor != "" {
+		colorCode = borderColor
+		resetCode = "\x1b[0m"
+	}
 
 	for _, line := range lines {
 		if line == "" {
@@ -132,16 +140,23 @@ func wrapInBorders(content string, boxWidth int) string {
 		// Remove ANSI color codes to measure actual display width
 		displayWidth := len(stripANSI(line))
 
-		// Add left border and padding
-		result.WriteString("│ ")
+		// Add left border and padding with color
+		result.WriteString(colorCode)
+		result.WriteString("│")
+		result.WriteString(resetCode)
+		result.WriteString(" ")
 		result.WriteString(line)
 
-		// Add right padding and border
+		// Add right padding and border with color
 		paddingNeeded := contentWidth - displayWidth
 		if paddingNeeded > 0 {
 			result.WriteString(strings.Repeat(" ", paddingNeeded))
 		}
-		result.WriteString(" │\n")
+		result.WriteString(" ")
+		result.WriteString(colorCode)
+		result.WriteString("│")
+		result.WriteString(resetCode)
+		result.WriteString("\n")
 	}
 
 	return result.String()
@@ -162,6 +177,27 @@ func stripANSI(s string) string {
 		}
 	}
 	return result
+}
+
+// hexToANSI converts a hex color to ANSI escape code
+func hexToANSI(hexColor string) string {
+	if hexColor == "" {
+		return ""
+	}
+	// Remove # if present
+	if len(hexColor) > 0 && hexColor[0] == '#' {
+		hexColor = hexColor[1:]
+	}
+	if len(hexColor) != 6 {
+		return ""
+	}
+
+	// Parse RGB values
+	var r, g, b int
+	fmt.Sscanf(hexColor, "%02x%02x%02x", &r, &g, &b)
+
+	// Return ANSI TrueColor escape code
+	return fmt.Sprintf("\x1b[38;2;%d;%d;%dm", r, g, b)
 }
 
 func (m simpleModel) View() string {
@@ -202,11 +238,14 @@ func (m simpleModel) View() string {
 
 	renderer := dataviz.NewTerminalRenderer()
 
+	// Convert accent color to ANSI code for borders
+	borderColor := hexToANSI(accentColor)
+
 	// Heatmap
 	output += "┌─ CONTRIBUTION HEATMAP ───────────────────────────────────────────┐\n"
 	heatmapBounds := dataviz.Bounds{X: 0, Y: 0, Width: boxWidth - 4, Height: 3}
 	heatmapOutput := renderer.RenderHeatmap(m.heatmap, heatmapBounds, config)
-	output += wrapInBorders(heatmapOutput.String(), boxWidth)
+	output += wrapInBorders(heatmapOutput.String(), boxWidth, borderColor)
 	output += "└──────────────────────────────────────────────────────────────────┘\n\n"
 
 	// Line Graph
@@ -217,14 +256,14 @@ func (m simpleModel) View() string {
 	}
 	lineBounds := dataviz.Bounds{X: 0, Y: 0, Width: boxWidth - 4, Height: lineHeight}
 	lineOutput := renderer.RenderLineGraph(m.lineGraph, lineBounds, config)
-	output += wrapInBorders(lineOutput.String(), boxWidth)
+	output += wrapInBorders(lineOutput.String(), boxWidth, borderColor)
 	output += "└──────────────────────────────────────────────────────────────────┘\n\n"
 
 	// Bar Chart
 	output += "┌─ LANGUAGE USAGE BAR CHART ───────────────────────────────────────┐\n"
 	barBounds := dataviz.Bounds{X: 0, Y: 0, Width: boxWidth - 4, Height: 8}
 	barOutput := renderer.RenderBarChart(m.barChart, barBounds, config)
-	output += wrapInBorders(barOutput.String(), boxWidth)
+	output += wrapInBorders(barOutput.String(), boxWidth, borderColor)
 	output += "└──────────────────────────────────────────────────────────────────┘\n"
 
 	return output
