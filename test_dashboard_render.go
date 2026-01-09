@@ -4,11 +4,59 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/SCKelemen/dataviz"
 	design "github.com/SCKelemen/design-system"
 )
+
+// wrapInBorders adds left and right borders to content
+func wrapInBorders(content string, boxWidth int) string {
+	lines := strings.Split(content, "\n")
+	var result strings.Builder
+
+	// Content width is box width minus borders (│ on each side) and padding (1 space on each side)
+	contentWidth := boxWidth - 4
+
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		// Remove ANSI color codes to measure actual display width
+		displayWidth := len(stripANSI(line))
+
+		// Add left border and padding
+		result.WriteString("│ ")
+		result.WriteString(line)
+
+		// Add right padding and border
+		paddingNeeded := contentWidth - displayWidth
+		if paddingNeeded > 0 {
+			result.WriteString(strings.Repeat(" ", paddingNeeded))
+		}
+		result.WriteString(" │\n")
+	}
+
+	return result.String()
+}
+
+// stripANSI removes ANSI escape codes for measuring display width
+func stripANSI(s string) string {
+	result := ""
+	inEscape := false
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\x1b' {
+			inEscape = true
+		} else if inEscape && s[i] == 'm' {
+			inEscape = false
+		} else if !inEscape {
+			result += string(s[i])
+		}
+	}
+	return result
+}
 
 func main() {
 	// Simulate a terminal size
@@ -63,6 +111,7 @@ func main() {
 	renderer := dataviz.NewTerminalRenderer()
 
 	// Heatmap
+	const boxWidth = 70
 	fmt.Println("┌─ CONTRIBUTION HEATMAP ───────────────────────────────────────────┐")
 	heatmapData := dataviz.HeatmapData{
 		Days:      heatmapDays,
@@ -70,9 +119,9 @@ func main() {
 		EndDate:   now,
 		Type:      "linear",
 	}
-	heatmapBounds := dataviz.Bounds{X: 0, Y: 0, Width: 60, Height: 3}
+	heatmapBounds := dataviz.Bounds{X: 0, Y: 0, Width: boxWidth - 4, Height: 3}
 	heatmapOutput := renderer.RenderHeatmap(heatmapData, heatmapBounds, config)
-	fmt.Print(heatmapOutput.String())
+	fmt.Print(wrapInBorders(heatmapOutput.String(), boxWidth))
 	fmt.Println("└──────────────────────────────────────────────────────────────────┘")
 	fmt.Println()
 
@@ -82,10 +131,9 @@ func main() {
 		Points: linePoints,
 		Color:  "#2196F3",
 	}
-	lineBounds := dataviz.Bounds{X: 0, Y: 0, Width: 70, Height: 15}
+	lineBounds := dataviz.Bounds{X: 0, Y: 0, Width: boxWidth - 4, Height: 15}
 	lineOutput := renderer.RenderLineGraph(lineData, lineBounds, config)
-	fmt.Print(lineOutput.String())
-	fmt.Println()
+	fmt.Print(wrapInBorders(lineOutput.String(), boxWidth))
 	fmt.Println("└──────────────────────────────────────────────────────────────────┘")
 	fmt.Println()
 
@@ -95,9 +143,9 @@ func main() {
 		Bars:  bars,
 		Color: "#FF9800",
 	}
-	barBounds := dataviz.Bounds{X: 0, Y: 0, Width: 50, Height: 8}
+	barBounds := dataviz.Bounds{X: 0, Y: 0, Width: boxWidth - 4, Height: 8}
 	barOutput := renderer.RenderBarChart(barData, barBounds, config)
-	fmt.Print(barOutput.String())
+	fmt.Print(wrapInBorders(barOutput.String(), boxWidth))
 	fmt.Println("└──────────────────────────────────────────────────────────────────┘")
 	fmt.Println()
 
@@ -128,7 +176,7 @@ func main() {
 	// Heatmap with purple
 	fmt.Println("┌─ CONTRIBUTION HEATMAP ───────────────────────────────────────────┐")
 	heatmapOutputNight := renderer.RenderHeatmap(heatmapData, heatmapBounds, configNight)
-	fmt.Print(heatmapOutputNight.String())
+	fmt.Print(wrapInBorders(heatmapOutputNight.String(), boxWidth))
 	fmt.Println("└──────────────────────────────────────────────────────────────────┘")
 	fmt.Println()
 

@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -115,12 +116,63 @@ func (m simpleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// wrapInBorders adds left and right borders to content
+func wrapInBorders(content string, boxWidth int) string {
+	lines := strings.Split(content, "\n")
+	var result strings.Builder
+
+	// Content width is box width minus borders (│ on each side) and padding (1 space on each side)
+	contentWidth := boxWidth - 4
+
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		// Remove ANSI color codes to measure actual display width
+		displayWidth := len(stripANSI(line))
+
+		// Add left border and padding
+		result.WriteString("│ ")
+		result.WriteString(line)
+
+		// Add right padding and border
+		paddingNeeded := contentWidth - displayWidth
+		if paddingNeeded > 0 {
+			result.WriteString(strings.Repeat(" ", paddingNeeded))
+		}
+		result.WriteString(" │\n")
+	}
+
+	return result.String()
+}
+
+// stripANSI removes ANSI escape codes for measuring display width
+func stripANSI(s string) string {
+	// Simple ANSI code stripper - matches \x1b[...m patterns
+	result := ""
+	inEscape := false
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\x1b' {
+			inEscape = true
+		} else if inEscape && s[i] == 'm' {
+			inEscape = false
+		} else if !inEscape {
+			result += string(s[i])
+		}
+	}
+	return result
+}
+
 func (m simpleModel) View() string {
 	if !m.ready {
 		return "Initializing...\n"
 	}
 
 	var output string
+
+	// Box width for all containers
+	const boxWidth = 70
 
 	// Title
 	themeIndicator := "[Blue Theme]"
@@ -152,9 +204,9 @@ func (m simpleModel) View() string {
 
 	// Heatmap
 	output += "┌─ CONTRIBUTION HEATMAP ───────────────────────────────────────────┐\n"
-	heatmapBounds := dataviz.Bounds{X: 0, Y: 0, Width: 60, Height: 3}
+	heatmapBounds := dataviz.Bounds{X: 0, Y: 0, Width: boxWidth - 4, Height: 3}
 	heatmapOutput := renderer.RenderHeatmap(m.heatmap, heatmapBounds, config)
-	output += heatmapOutput.String()
+	output += wrapInBorders(heatmapOutput.String(), boxWidth)
 	output += "└──────────────────────────────────────────────────────────────────┘\n\n"
 
 	// Line Graph
@@ -163,20 +215,16 @@ func (m simpleModel) View() string {
 	if m.height > 40 {
 		lineHeight = 20
 	}
-	lineWidth := 70
-	if m.width > 100 {
-		lineWidth = 80
-	}
-	lineBounds := dataviz.Bounds{X: 0, Y: 0, Width: lineWidth, Height: lineHeight}
+	lineBounds := dataviz.Bounds{X: 0, Y: 0, Width: boxWidth - 4, Height: lineHeight}
 	lineOutput := renderer.RenderLineGraph(m.lineGraph, lineBounds, config)
-	output += lineOutput.String()
-	output += "\n└──────────────────────────────────────────────────────────────────┘\n\n"
+	output += wrapInBorders(lineOutput.String(), boxWidth)
+	output += "└──────────────────────────────────────────────────────────────────┘\n\n"
 
 	// Bar Chart
 	output += "┌─ LANGUAGE USAGE BAR CHART ───────────────────────────────────────┐\n"
-	barBounds := dataviz.Bounds{X: 0, Y: 0, Width: 50, Height: 8}
+	barBounds := dataviz.Bounds{X: 0, Y: 0, Width: boxWidth - 4, Height: 8}
 	barOutput := renderer.RenderBarChart(m.barChart, barBounds, config)
-	output += barOutput.String()
+	output += wrapInBorders(barOutput.String(), boxWidth)
 	output += "└──────────────────────────────────────────────────────────────────┘\n"
 
 	return output
