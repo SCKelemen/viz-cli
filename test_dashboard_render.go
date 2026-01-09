@@ -9,6 +9,7 @@ import (
 
 	"github.com/SCKelemen/dataviz"
 	design "github.com/SCKelemen/design-system"
+	"github.com/SCKelemen/text"
 )
 
 // wrapInBorders adds left and right borders to content with optional color
@@ -26,14 +27,18 @@ func wrapInBorders(content string, boxWidth int, borderColor string) string {
 		colorCode = borderColor
 	}
 
+	// Create text handler for proper Unicode width measurement
+	txt := text.NewTerminal()
+
 	for _, line := range lines {
 		// Skip completely empty lines
 		if line == "" {
 			continue
 		}
 
-		// Remove ANSI color codes to measure actual display width (in runes/characters)
-		displayWidth := len([]rune(stripANSI(line)))
+		// Remove ANSI color codes and measure actual display width using text package
+		stripped := stripANSI(line)
+		displayWidth := int(txt.Width(stripped))
 
 		// Truncate if line is too long
 		if displayWidth > contentWidth {
