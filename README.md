@@ -5,10 +5,34 @@ Command-line data visualization tool with dual-mode output: SVG for web and term
 ## Features
 
 - **Multiple Visualization Types**: Heatmaps, line graphs, bar charts, stat cards
-- **Dual Output Modes**: SVG (vector graphics) and terminal (ASCII/Unicode)
+- **Dual Output Modes**: SVG (vector graphics) and terminal (ASCII/Unicode with braille characters)
+- **Enhanced Terminal Rendering**: Smooth braille character curves and ANSI color gradients
+- **Interactive Dashboard**: Real-time TUI with bubbletea
 - **Theme Support**: Default, midnight, nord, paper, wrapped themes
 - **Data Input**: JSON files or stdin
 - **Configurable**: Width, height, colors, and more
+
+## Interactive Dashboard
+
+### Simple Dashboard (Recommended)
+
+The simple dashboard provides reliable visualization rendering with braille characters and ANSI colors:
+
+```bash
+go build simple_dashboard.go
+./simple_dashboard
+```
+
+**Controls:**
+- `t`: Toggle theme (blue/purple)
+- `q`: Quit
+
+**Features:**
+- Contribution heatmap with color gradients
+- Line graphs with smooth braille curves (⠀⠁⠂⠃⠄⠅⠆⠇)
+- Colored bar charts
+- Real-time updates
+- Theme switching
 
 ## Installation
 
