@@ -4,149 +4,11 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"strings"
 	"time"
 
 	"github.com/SCKelemen/dataviz"
 	design "github.com/SCKelemen/design-system"
-	"github.com/SCKelemen/text"
 )
-
-// wrapInBorders adds left and right borders to content with optional color
-func wrapInBorders(content string, boxWidth int, borderColor string) string {
-	lines := strings.Split(content, "\n")
-	var result strings.Builder
-
-	// Content width is box width minus borders (│ on each side) and padding (1 space on each side)
-	contentWidth := boxWidth - 4
-
-	// ANSI color codes for borders
-	colorCode := ""
-	resetCode := "\x1b[0m"
-	if borderColor != "" {
-		colorCode = borderColor
-	}
-
-	// Create text handler for proper Unicode width measurement
-	txt := text.NewTerminal()
-
-	for _, line := range lines {
-		// Skip completely empty lines
-		if line == "" {
-			continue
-		}
-
-		// Remove ANSI color codes and measure actual display width using text package
-		stripped := stripANSI(line)
-		displayWidth := int(txt.Width(stripped))
-
-		// Truncate if line is too long
-		if displayWidth > contentWidth {
-			// Need to truncate while preserving ANSI codes
-			line = truncateANSI(line, contentWidth)
-			displayWidth = contentWidth
-		}
-
-		// Add left border and padding with color
-		if borderColor != "" {
-			result.WriteString(colorCode)
-		}
-		result.WriteString("│")
-		if borderColor != "" {
-			result.WriteString(resetCode)
-		}
-		result.WriteString(" ")
-		result.WriteString(line)
-
-		// Ensure any open ANSI codes are closed before padding
-		if hasUnclosedANSI(line) {
-			result.WriteString(resetCode)
-		}
-
-		// Add right padding - always pad to exact width for alignment
-		paddingNeeded := contentWidth - displayWidth
-		if paddingNeeded > 0 {
-			result.WriteString(strings.Repeat(" ", paddingNeeded))
-		}
-
-		result.WriteString(" ")
-		if borderColor != "" {
-			result.WriteString(colorCode)
-		}
-		result.WriteString("│")
-		if borderColor != "" {
-			result.WriteString(resetCode)
-		}
-		result.WriteString("\n")
-	}
-
-	return result.String()
-}
-
-// hasUnclosedANSI checks if a string has unclosed ANSI codes
-func hasUnclosedANSI(s string) bool {
-	openCount := 0
-	for i := 0; i < len(s); i++ {
-		if s[i] == '\x1b' && i+1 < len(s) && s[i+1] == '[' {
-			openCount++
-		} else if openCount > 0 && s[i] == 'm' {
-			openCount--
-		}
-	}
-	return openCount > 0
-}
-
-// truncateANSI truncates a string to a certain visual width while preserving ANSI codes
-func truncateANSI(s string, maxWidth int) string {
-	var result strings.Builder
-	visualWidth := 0
-	inEscape := false
-
-	for i := 0; i < len(s); i++ {
-		if s[i] == '\x1b' {
-			inEscape = true
-			result.WriteByte(s[i])
-		} else if inEscape {
-			result.WriteByte(s[i])
-			if s[i] == 'm' {
-				inEscape = false
-			}
-		} else {
-			if visualWidth >= maxWidth {
-				break
-			}
-			result.WriteByte(s[i])
-			visualWidth++
-		}
-	}
-
-	// Close any open ANSI codes
-	if inEscape || hasUnclosedANSI(result.String()) {
-		result.WriteString("\x1b[0m")
-	}
-
-	return result.String()
-}
-
-// stripANSI removes ANSI escape codes for measuring display width
-func stripANSI(s string) string {
-	var result strings.Builder
-	inEscape := false
-
-	for _, r := range s {
-		if r == '\x1b' {
-			inEscape = true
-		} else if inEscape {
-			if r == 'm' {
-				inEscape = false
-			}
-			// Skip all characters while in escape sequence
-		} else {
-			result.WriteRune(r)
-		}
-	}
-	return result.String()
-}
 
 // hexToANSI converts a hex color to ANSI escape code
 func hexToANSI(hexColor string) string {
@@ -207,9 +69,20 @@ func main() {
 	}
 
 	// Test with default (blue) theme
-	fmt.Println("╔═══ DataViz Terminal Dashboard [Blue Theme] ═══════════════════════════════╗")
-	fmt.Printf("║ Size: %dx%d • Counter: 5s • Press 't' to toggle theme, 'q' to quit ║\n", width, height)
-	fmt.Println("╚═════════════════════════════════════════════════════════════════════════╝")
+	const boxWidth = 70
+	accentColor := "#2196F3"
+	borderColor := hexToANSI(accentColor)
+
+	// Create title bar
+	titleBar := &TitleBar{
+		Title:       "DataViz Terminal Dashboard [Blue Theme]",
+		Width:       76,
+		BorderColor: borderColor,
+		Style:       LightBorderStyle,
+	}
+	fmt.Print(titleBar.Render())
+	fmt.Print(titleBar.AddInfoLine(fmt.Sprintf(" Size: %dx%d • Counter: 5s • Press 't' to toggle theme, 'q' to quit ", width, height)))
+	fmt.Print(titleBar.RenderBottom())
 	fmt.Println()
 
 	tokens := design.DefaultTheme()
@@ -221,12 +94,13 @@ func main() {
 
 	renderer := dataviz.NewTerminalRenderer()
 
-	// Convert accent color to ANSI code for borders
-	borderColor := hexToANSI("#2196F3")
-
 	// Heatmap
-	const boxWidth = 70
-	fmt.Println("┌─ CONTRIBUTION HEATMAP ───────────────────────────────────────────┐")
+	heatmapBox := &Box{
+		Label:       "CONTRIBUTION HEATMAP",
+		Width:       boxWidth,
+		BorderColor: borderColor,
+		Style:       LightBorderStyle,
+	}
 	heatmapData := dataviz.HeatmapData{
 		Days:      heatmapDays,
 		StartDate: now.AddDate(0, 0, -60),
@@ -235,32 +109,39 @@ func main() {
 	}
 	heatmapBounds := dataviz.Bounds{X: 0, Y: 0, Width: boxWidth - 4, Height: 3}
 	heatmapOutput := renderer.RenderHeatmap(heatmapData, heatmapBounds, config)
-	fmt.Print(wrapInBorders(heatmapOutput.String(), boxWidth, borderColor))
-	fmt.Println("└──────────────────────────────────────────────────────────────────┘")
+	fmt.Print(heatmapBox.RenderComplete(heatmapOutput.String()))
 	fmt.Println()
 
 	// Line Graph
-	fmt.Println("┌─ METRICS LINE GRAPH ─────────────────────────────────────────────┐")
+	lineGraphBox := &Box{
+		Label:       "METRICS LINE GRAPH",
+		Width:       boxWidth,
+		BorderColor: borderColor,
+		Style:       LightBorderStyle,
+	}
 	lineData := dataviz.LineGraphData{
 		Points: linePoints,
 		Color:  "#2196F3",
 	}
 	lineBounds := dataviz.Bounds{X: 0, Y: 0, Width: boxWidth - 4, Height: 15}
 	lineOutput := renderer.RenderLineGraph(lineData, lineBounds, config)
-	fmt.Print(wrapInBorders(lineOutput.String(), boxWidth, borderColor))
-	fmt.Println("└──────────────────────────────────────────────────────────────────┘")
+	fmt.Print(lineGraphBox.RenderComplete(lineOutput.String()))
 	fmt.Println()
 
 	// Bar Chart
-	fmt.Println("┌─ LANGUAGE USAGE BAR CHART ───────────────────────────────────────┐")
+	barChartBox := &Box{
+		Label:       "LANGUAGE USAGE BAR CHART",
+		Width:       boxWidth,
+		BorderColor: borderColor,
+		Style:       LightBorderStyle,
+	}
 	barData := dataviz.BarChartData{
 		Bars:  bars,
 		Color: "#FF9800",
 	}
 	barBounds := dataviz.Bounds{X: 0, Y: 0, Width: boxWidth - 4, Height: 8}
 	barOutput := renderer.RenderBarChart(barData, barBounds, config)
-	fmt.Print(wrapInBorders(barOutput.String(), boxWidth, borderColor))
-	fmt.Println("└──────────────────────────────────────────────────────────────────┘")
+	fmt.Print(barChartBox.RenderComplete(barOutput.String()))
 	fmt.Println()
 
 	fmt.Println("✓ Dashboard rendering test complete!")
@@ -275,9 +156,20 @@ func main() {
 	fmt.Println("Testing theme switch...")
 	fmt.Println("═══════════════════════════════════════════════════════════════════════════")
 	fmt.Println()
-	fmt.Println("╔═══ DataViz Terminal Dashboard [Purple Theme] ═══════════════════════════════╗")
-	fmt.Printf("║ Size: %dx%d • Counter: 10s • Press 't' to toggle theme, 'q' to quit ║\n", width, height)
-	fmt.Println("╚═════════════════════════════════════════════════════════════════════════╝")
+
+	accentColorNight := "#7D56F4"
+	borderColorNight := hexToANSI(accentColorNight)
+
+	// Create purple theme title bar
+	titleBarNight := &TitleBar{
+		Title:       "DataViz Terminal Dashboard [Purple Theme]",
+		Width:       76,
+		BorderColor: borderColorNight,
+		Style:       LightBorderStyle,
+	}
+	fmt.Print(titleBarNight.Render())
+	fmt.Print(titleBarNight.AddInfoLine(fmt.Sprintf(" Size: %dx%d • Counter: 10s • Press 't' to toggle theme, 'q' to quit ", width, height)))
+	fmt.Print(titleBarNight.RenderBottom())
 	fmt.Println()
 
 	tokensNight := design.MidnightTheme()
@@ -287,14 +179,15 @@ func main() {
 		Theme:        "midnight",
 	}
 
-	// Convert purple color to ANSI code for borders
-	borderColorNight := hexToANSI("#7D56F4")
-
 	// Heatmap with purple
-	fmt.Println("┌─ CONTRIBUTION HEATMAP ───────────────────────────────────────────┐")
+	heatmapBoxNight := &Box{
+		Label:       "CONTRIBUTION HEATMAP",
+		Width:       boxWidth,
+		BorderColor: borderColorNight,
+		Style:       LightBorderStyle,
+	}
 	heatmapOutputNight := renderer.RenderHeatmap(heatmapData, heatmapBounds, configNight)
-	fmt.Print(wrapInBorders(heatmapOutputNight.String(), boxWidth, borderColorNight))
-	fmt.Println("└──────────────────────────────────────────────────────────────────┘")
+	fmt.Print(heatmapBoxNight.RenderComplete(heatmapOutputNight.String()))
 	fmt.Println()
 
 	fmt.Println("✓ Theme switching works correctly!")
