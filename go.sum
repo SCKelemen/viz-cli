@@ -1,7 +1,5 @@
 cel.dev/expr v0.24.0 h1:56OvJKSH3hDGL0ml5uSxZmz3/3Pq4tJ+fb1unVLAFcY=
 cel.dev/expr v0.24.0/go.mod h1:hLPLo1W4QUmuYdA72RBX06QTs6MXw941piREPl3Yfiw=
-github.com/SCKelemen/dataviz v0.1.1 h1:s2c+eWJii5QBomkAcMIl5HYy3gvqbfwhM7soaATe5d0=
-github.com/SCKelemen/dataviz v0.1.1/go.mod h1:xw/EYoI2j/j5lGdl9e0P9KGmVmpbnrTLUOEvyPPUG1w=
 github.com/SCKelemen/design-system v0.1.0 h1:qKFA11c/1j7mGZXPy5MhJ4/nTWnSJtGvsW2lxxO4jAI=
 github.com/SCKelemen/design-system v0.1.0/go.mod h1:tWG8L3keowF07/msfLMPASYuOXxS2BWkDLNhLq7JhnA=
 github.com/SCKelemen/svg v0.1.0 h1:3FuWCps4Csl9aPnjbGlC4qcb9apucDfNOAitTD0G9Es=

@@ -16,6 +16,8 @@ replace github.com/SCKelemen/units => ../units
 
 replace github.com/SCKelemen/cli => ../cli
 
+replace github.com/SCKelemen/dataviz => ../dataviz
+
 require (
 	github.com/SCKelemen/cli v0.0.0-00010101000000-000000000000
 	github.com/SCKelemen/color v1.0.0

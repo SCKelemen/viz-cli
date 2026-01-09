@@ -200,17 +200,20 @@ func (m dashboardModel) View() string {
 	screen := renderer.NewScreen(m.width, m.height)
 	ctx := layout.NewLayoutContext(float64(m.width), float64(m.height), 16)
 
-	// Get theme
+	// Get theme with distinct colors
 	var tokens *design.DesignTokens
+	var accentColor string
 	if m.colorTheme == "midnight" {
 		tokens = design.MidnightTheme()
+		accentColor = "#7D56F4" // Purple for midnight theme
 	} else {
 		tokens = design.DefaultTheme()
+		accentColor = "#2196F3" // Blue for default theme
 	}
 
 	config := dataviz.RenderConfig{
 		DesignTokens: tokens,
-		Color:        tokens.Accent,
+		Color:        accentColor,
 		Theme:        m.colorTheme,
 	}
 
@@ -248,7 +251,7 @@ func (m dashboardModel) renderSingleView(screen *renderer.Screen, ctx *layout.La
 		},
 	}
 	white, _ := color.ParseColor("#FAFAFA")
-	accent, _ := color.ParseColor(config.DesignTokens.Accent)
+	accent, _ := color.ParseColor(config.Color)
 	headerStyle := &renderer.Style{
 		Foreground:  &white,
 		BorderColor: &accent,
@@ -317,7 +320,7 @@ func (m dashboardModel) renderMultiView(screen *renderer.Screen, ctx *layout.Lay
 	rootStyled := renderer.NewStyledNode(root, nil)
 
 	white, _ := color.ParseColor("#FAFAFA")
-	accent, _ := color.ParseColor(config.DesignTokens.Accent)
+	accent, _ := color.ParseColor(config.Color)
 
 	// Header
 	headerNode := &layout.Node{
