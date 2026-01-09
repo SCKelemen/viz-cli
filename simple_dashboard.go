@@ -126,37 +126,103 @@ func wrapInBorders(content string, boxWidth int, borderColor string) string {
 
 	// ANSI color codes for borders
 	colorCode := ""
-	resetCode := ""
+	resetCode := "\x1b[0m"
 	if borderColor != "" {
 		colorCode = borderColor
-		resetCode = "\x1b[0m"
 	}
 
 	for _, line := range lines {
+		// Skip completely empty lines
 		if line == "" {
 			continue
 		}
 
-		// Remove ANSI color codes to measure actual display width
-		displayWidth := len(stripANSI(line))
+		// Remove ANSI color codes to measure actual display width (in runes/characters)
+		displayWidth := len([]rune(stripANSI(line)))
+
+		// Truncate if line is too long
+		if displayWidth > contentWidth {
+			// Need to truncate while preserving ANSI codes
+			line = truncateANSI(line, contentWidth)
+			displayWidth = contentWidth
+		}
 
 		// Add left border and padding with color
-		result.WriteString(colorCode)
+		if borderColor != "" {
+			result.WriteString(colorCode)
+		}
 		result.WriteString("│")
-		result.WriteString(resetCode)
+		if borderColor != "" {
+			result.WriteString(resetCode)
+		}
 		result.WriteString(" ")
 		result.WriteString(line)
 
-		// Add right padding and border with color
+		// Ensure any open ANSI codes are closed before padding
+		if hasUnclosedANSI(line) {
+			result.WriteString(resetCode)
+		}
+
+		// Add right padding - always pad to exact width for alignment
 		paddingNeeded := contentWidth - displayWidth
 		if paddingNeeded > 0 {
 			result.WriteString(strings.Repeat(" ", paddingNeeded))
 		}
+
 		result.WriteString(" ")
-		result.WriteString(colorCode)
+		if borderColor != "" {
+			result.WriteString(colorCode)
+		}
 		result.WriteString("│")
-		result.WriteString(resetCode)
+		if borderColor != "" {
+			result.WriteString(resetCode)
+		}
 		result.WriteString("\n")
+	}
+
+	return result.String()
+}
+
+// hasUnclosedANSI checks if a string has unclosed ANSI codes
+func hasUnclosedANSI(s string) bool {
+	openCount := 0
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\x1b' && i+1 < len(s) && s[i+1] == '[' {
+			openCount++
+		} else if openCount > 0 && s[i] == 'm' {
+			openCount--
+		}
+	}
+	return openCount > 0
+}
+
+// truncateANSI truncates a string to a certain visual width while preserving ANSI codes
+func truncateANSI(s string, maxWidth int) string {
+	var result strings.Builder
+	visualWidth := 0
+	inEscape := false
+
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\x1b' {
+			inEscape = true
+			result.WriteByte(s[i])
+		} else if inEscape {
+			result.WriteByte(s[i])
+			if s[i] == 'm' {
+				inEscape = false
+			}
+		} else {
+			if visualWidth >= maxWidth {
+				break
+			}
+			result.WriteByte(s[i])
+			visualWidth++
+		}
+	}
+
+	// Close any open ANSI codes
+	if inEscape || hasUnclosedANSI(result.String()) {
+		result.WriteString("\x1b[0m")
 	}
 
 	return result.String()
@@ -164,19 +230,22 @@ func wrapInBorders(content string, boxWidth int, borderColor string) string {
 
 // stripANSI removes ANSI escape codes for measuring display width
 func stripANSI(s string) string {
-	// Simple ANSI code stripper - matches \x1b[...m patterns
-	result := ""
+	var result strings.Builder
 	inEscape := false
-	for i := 0; i < len(s); i++ {
-		if s[i] == '\x1b' {
+
+	for _, r := range s {
+		if r == '\x1b' {
 			inEscape = true
-		} else if inEscape && s[i] == 'm' {
-			inEscape = false
-		} else if !inEscape {
-			result += string(s[i])
+		} else if inEscape {
+			if r == 'm' {
+				inEscape = false
+			}
+			// Skip all characters while in escape sequence
+		} else {
+			result.WriteRune(r)
 		}
 	}
-	return result
+	return result.String()
 }
 
 // hexToANSI converts a hex color to ANSI escape code
