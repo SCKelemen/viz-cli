@@ -1,0 +1,11 @@
+{
+  "bars": [
+    {"value": 85, "label": "React"},
+    {"value": 70, "label": "Vue"},
+    {"value": 95, "label": "Svelte"},
+    {"value": 60, "label": "Angular"},
+    {"value": 80, "label": "Next.js"}
+  ],
+  "color": "#3B82F6",
+  "stacked": false
+}
